@@ -1,61 +1,66 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Numerics;
-using System.Threading.Tasks;
 using MathNet.Numerics.LinearAlgebra.Double;
-using static System.Double;
-
 namespace Rasterizer
 {
     public static class ObjLoader
     {
-        public static Triangle[] Load(string path)
+        public static Object Load(string name, string objectPath, string texturePath, Transform transform = null)
         {
-            List<Triangle> tris = new List<Triangle>(4000);
+            var model = LoadPolygon(objectPath);
+            var texture = new Bitmap(Image.FromFile(texturePath));
+            
+            var obj = new Object(name, model, texture);
+            obj.Transform ??= transform;
+            
+            return obj;
+        }
+        
+        private static Mesh[] LoadPolygon(string path)
+        {
+            var triangles = new List<Mesh>(4000);
 
-            List<DenseMatrix> verts = new List<DenseMatrix>(4000);
-            List<Vector2> uv = new List<Vector2>(4000);
-            List<Vector3> faces = new List<Vector3>(4000);
-            List<Vector3> uvFaces = new List<Vector3>(4000);
+            var verts = new List<DenseMatrix>(4000);
+            var uvs = new List<Vector2>(4000);
+            var normals = new List<Vector2>(4000);
+
+            var faces = new List<Vector3>(4000);
+            var uvIndex = new List<Vector3>(4000);
+            var normalIndex = new List<Vector3>(4000);
 
             foreach (string line in File.ReadLines(path))
             {
                 string[] t = line.Split(' ', '/');
                 string type = t[0];
-                if (type == "v")
+                switch (type)
                 {
-                    //頂点座標
-                    double a, b, c;
-                    TryParse(t[1], out a);
-                    TryParse(t[2], out b);
-                    TryParse(t[3], out c);
-                    verts.Add(DenseMatrix.OfArray(new double[,]
+                    case "v":
                     {
-                        {(float) a}, {(float) b}, {(float) c}, {1}
-                    }));
-                }
-                else if (type == "vt")
-                {
-                    double a, b;
-                    TryParse(t[1], out a);
-                    TryParse(t[2], out b);
-                    uv.Add(new Vector2((float) a, (float) b));
-                }
-                else if (type == "f")
-                {
-                    //頂点座標
-                    double a, b, c;
-                    TryParse(t[1], out a);
-                    TryParse(t[4], out b);
-                    TryParse(t[7], out c);
-                    faces.Add(new Vector3((float) a, (float) b, (float) c));
-                    
-                    double au, bu, cu;
-                    TryParse(t[2], out au);
-                    TryParse(t[5], out bu);
-                    TryParse(t[8], out cu);
-                    uvFaces.Add(new Vector3((float) au, (float) bu, (float) cu));
+                        verts.Add(DenseMatrix.OfArray(new double[,]
+                        {
+                            {double.Parse(t[1])}, {double.Parse(t[2])}, {double.Parse(t[3])}, {1}
+                        }));
+                        break;
+                    }
+                    case "vt":
+                    {
+                        uvs.Add(new Vector2(float.Parse(t[1]), float.Parse(t[2])));
+                        break;
+                    }
+                    case "vn":
+                    {
+                        normals.Add(new Vector2(float.Parse(t[1]), float.Parse(t[2])));
+                        break;
+                    }
+                    case "f":
+                    {
+                        faces.Add(new Vector3(int.Parse(t[1]), int.Parse(t[4]), int.Parse(t[7])));
+                        uvIndex.Add(new Vector3(int.Parse(t[2]), int.Parse(t[5]), int.Parse(t[8])));
+                        normalIndex.Add(new Vector3(int.Parse(t[3]), int.Parse(t[6]), int.Parse(t[9])));
+                        break;
+                    }
                 }
             }
 
@@ -63,23 +68,32 @@ namespace Rasterizer
             {
                 var face = faces[i];
 
-                var a = new Point();
-                a.Position = verts[(int)face.X - 1];
-                a.UV = uv[(int)uvFaces[i].X - 1];
-                
-                var b = new Point();
-                b.Position = verts[(int)face.Y - 1];
-                b.UV = uv[(int)uvFaces[i].Y - 1];
-                
-                var c = new Point();
-                c.Position = verts[(int)face.Z - 1];
-                c.UV = uv[(int)uvFaces[i].Z - 1];
-                
-                Triangle tri = new Triangle(a,b,c);
-                tris.Add(tri);
+                var a = new Vertex
+                {
+                    Position = verts[(int) face.X - 1],
+                    UV = uvs[(int) uvIndex[i].X - 1],
+                    Normal = normals[(int) normalIndex[i].X - 1]
+                };
+
+                var b = new Vertex
+                {
+                    Position = verts[(int) face.Y - 1],
+                    UV = uvs[(int)uvIndex[i].Y - 1],
+                    Normal = normals[(int) normalIndex[i].Y - 1]
+                };
+
+                var c = new Vertex
+                {
+                    Position = verts[(int) face.Z - 1],
+                    UV = uvs[(int) uvIndex[i].Z - 1],
+                    Normal = normals[(int) normalIndex[i].Z - 1]
+                };
+
+                var tri = new Mesh(a,b,c);
+                triangles.Add(tri);
             }
 
-            return tris.ToArray();
+            return triangles.ToArray();
         }
     }
 }
