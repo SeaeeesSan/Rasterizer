@@ -30,5 +30,10 @@ namespace Rasterizer
             B.Position = matrix * B.Position;
             C.Position = matrix * C.Position;
         }
+
+        public Vertex[] GetVertex()
+        {
+            return new[] {A, B, C};
+        }
     }
 }

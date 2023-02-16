@@ -7,6 +7,6 @@ namespace Rasterizer
     {
         public DenseMatrix Position;
         public Vector2 UV;
-        public Vector2 Normal;
+        public Vector3 Normal;
     }
 }

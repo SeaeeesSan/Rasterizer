@@ -24,7 +24,7 @@ namespace Rasterizer
 
             var verts = new List<DenseMatrix>(4000);
             var uvs = new List<Vector2>(4000);
-            var normals = new List<Vector2>(4000);
+            var normals = new List<Vector3>(4000);
 
             var faces = new List<Vector3>(4000);
             var uvIndex = new List<Vector3>(4000);
@@ -51,7 +51,7 @@ namespace Rasterizer
                     }
                     case "vn":
                     {
-                        normals.Add(new Vector2(float.Parse(t[1]), float.Parse(t[2])));
+                        normals.Add(new Vector3(float.Parse(t[1]), float.Parse(t[2]), float.Parse(t[3])));
                         break;
                     }
                     case "f":
