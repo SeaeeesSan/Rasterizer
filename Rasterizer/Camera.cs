@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Drawing;
 using System.Numerics;
-using System.Runtime.InteropServices;
 using MathNet.Numerics.LinearAlgebra.Double;
 
 namespace Rasterizer
@@ -13,14 +12,11 @@ namespace Rasterizer
         private CameraSettings _cameraSettings;
 
         public FrameBuffer FrameBuffer;
-        public double[,] DepthBuffer;
 
         public Camera(CameraSettings cameraSettings)
         {
             _cameraSettings = cameraSettings;
-
             FrameBuffer = new FrameBuffer(_cameraSettings.ImageWidth, _cameraSettings.ImageHeight, Color.White);
-            DepthBuffer = new double[_cameraSettings.ImageWidth, _cameraSettings.ImageHeight];
         }
 
         /// <summary>
@@ -28,12 +24,12 @@ namespace Rasterizer
         /// </summary>
         public void Render()
         {
-            Console.Write("Rendering...");
-
             foreach (var obj in Scene.GetAllObjects())
             {
+                int i = 0;
                 foreach (var triangle in obj.Mesh)
                 {
+                    i++;
                     var a = calc(triangle.A);
                     var b = calc(triangle.B);
                     var c = calc(triangle.C);
@@ -50,102 +46,108 @@ namespace Rasterizer
                         {
                             try
                             {
-                                var p = new Vector2(x, y);
-
                                 if (x > _cameraSettings.ImageWidth || x < 0 || y > _cameraSettings.ImageHeight || y < 0)
                                 {
                                     continue;
                                 }
-
+                                var p = new Vector2(x, y);
+                                
                                 var aDepth = (float) (triangle.A.Position[2, 0] / triangle.A.Position[3, 0]);
                                 var bDepth = (float) (triangle.B.Position[2, 0] / triangle.B.Position[3, 0]);
                                 var cDepth = (float) (triangle.C.Position[2, 0] / triangle.C.Position[3, 0]);
-
+                            
                                 var ab = (b - a);
                                 var ap = (p - a);
-
+                            
                                 var bc = (c - b);
                                 var bp = (p - b);
-
+                            
                                 var ca = (a - c);
                                 var cp = (p - c);
-
+                            
                                 var abap = ab.X * ap.Y - ab.Y * ap.X;
                                 var bcbp = bc.X * bp.Y - bc.Y * bp.X;
                                 var cacp = ca.X * cp.Y - ca.Y * cp.X;
-
+                            
                                 var depth = 1 - InterpolationFloat(p, (Vector2) a, (Vector2) b,
                                     (Vector2) c, aDepth, bDepth, cDepth);
+                                
                                 if (abap >= 0 && bcbp >= 0 && cacp >= 0)
                                 {
-                                    if (DepthBuffer[x, y] < depth)
+                                    if (FrameBuffer.Depth[x, y] < depth)
                                     {
-                                        DepthBuffer[x, y] = depth;
-
-                                        var uv = InterpolationVector2(p, a, b, c, triangle.A.UV,
-                                            triangle.B.UV, triangle.C.UV);
-                                        var albedoColor = obj.Texture.GetPixel((int) (uv.X * obj.Texture.Width),
-                                            obj.Texture.Height - (int) (uv.Y * obj.Texture.Height));
-
-                                        //albdo
-                                        var albedo = new Vector3((float) albedoColor.R / 255,
-                                            (float) albedoColor.G / 255, (float) albedoColor.B / 255);
-
-                                        var color = Vector3.One;
-
+                                        //デプスバッファ書き込み
+                                        FrameBuffer.Depth[x, y] = depth;
+                            
+                                        //テクスチャ読み込み
+                                         var uv = InterpolationVector2(p, a, b, c, triangle.A.UV,
+                                             triangle.B.UV, triangle.C.UV);
+                                         var textureColor = obj.Texture.GetPixel((int) ((uv.X) * obj.Texture.Width),
+                                             obj.Texture.Height - ((int) ((uv.Y) * obj.Texture.Height)) );
+                                        
+                                        textureColor = Color.White;
+                                        
+                                        var albedo = new Vector3((float) textureColor.R / 255,
+                                            (float) textureColor.G / 255, (float) textureColor.B / 255);
                                         var normal = InterpolationVector3(p, a, b, c, triangle.A.Normal,
                                             triangle.B.Normal, triangle.C.Normal);
-
-                                        Vector3 light = new Vector3(1, 1, 0.0f);
-                                        float ip = light.X * normal.X + light.Y * normal.Y + light.Z * normal.Z;
-
-                                        Vector3 view = new Vector3(0, 0, 1);
-
-                                        Vector3 Refrect = -light - (2 *
-                                                                    (-light.X * normal.X + -light.Y * normal.Y +
-                                                                     -light.Z * normal.Z) * normal);
-
-                                        float refre = Refrect.X * view.X + Refrect.Y * view.Y + Refrect.Z * view.Z;
-
-                                        //鏡面反射係数
-                                        float ks = 0.01f;
-                                        //拡散反射係数
-                                        float kd = 0.7f;
-                                        //環境反射係数
-                                        float ka = 0.3f;
-                                        //光沢度
-                                        float alpha = 15;
-
+                            
+                                        //ライトのベクトル
+                                        var lightVector = Vector3.Normalize(new Vector3(1, 1, 0));
+                                        var ip = lightVector.X * normal.X + lightVector.Y * normal.Y +
+                                                 lightVector.Z * normal.Z;
+                            
+                                        //視線ベクトル
+                                        var viewVector = new Vector3(0, 0, 1);
+                            
+                                        //ハイライトの計算
+                                        var refrectVector = -lightVector - (2 *
+                                                                            (-lightVector.X * normal.X +
+                                                                             -lightVector.Y * normal.Y +
+                                                                             -lightVector.Z * normal.Z) * normal);
+                                        var refre = refrectVector.X * viewVector.X + refrectVector.Y * viewVector.Y +
+                                                    refrectVector.Z * viewVector.Z;
+                            
+                                        var ks = obj.Material.ks;
+                                        var kd = obj.Material.kd;
+                                        var ka = obj.Material.ka;
+                                        var alpha = obj.Material.alpha;
+                            
+                                        //正規化
                                         if (refre < 0)
                                         {
                                             refre = 0;
                                         }
-
-                                        //color = (float)((ka * color) + kd * ip + ks * Math.Pow(refre, alpha));
-                                        color.X = (float) (ks * Math.Pow(refre, alpha)) + (kd * ip * albedo.X) +
-                                                  ka * albedo.X;
-                                        color.Y = (float) (ks * Math.Pow(refre, alpha)) + (kd * ip * albedo.Y) +
-                                                  ka * albedo.Y;
-                                        color.Z = (float) (ks * Math.Pow(refre, alpha)) + (kd * ip * albedo.Z) +
-                                                  ka * albedo.Z;
-
-                                        Color col = Color.FromArgb((int) Math.Clamp(color.X * 255, 0, 255),
+                            
+                                        //色を計算
+                                        var color = new Vector3
+                                        {
+                                            X = (float) (ks * Math.Pow(refre, alpha)) + (kd * ip * albedo.X) +
+                                                ka * albedo.X,
+                                            Y = (float) (ks * Math.Pow(refre, alpha)) + (kd * ip * albedo.Y) +
+                                                ka * albedo.Y,
+                                            Z = (float) (ks * Math.Pow(refre, alpha)) + (kd * ip * albedo.Z) +
+                                                ka * albedo.Z
+                                        };
+                                        var pixelColor = Color.FromArgb((int) Math.Clamp(color.X * 255, 0, 255),
                                             (int) Math.Clamp(color.Y * 255, 0, 255),
                                             (int) Math.Clamp(color.Z * 255, 0, 255));
-
-                                        FrameBuffer.WritePixel(x, y, col);
+                            
+                                        //pixelColor = Color.Black;
+                            
+                                        //フレームバッファに書き込み
+                                        FrameBuffer.Color[x, y] = pixelColor;
                                     }
                                 }
                             }
                             catch
                             {
+                                continue;
                             }
                         }
                     }
                 }
             }
-
-            Console.WriteLine("done");
         }
 
 
@@ -154,7 +156,6 @@ namespace Rasterizer
         /// </summary>
         public void RenderPoints()
         {
-            Console.Write("Rendering(point only)...");
             foreach (var obj in Scene.GetAllObjects())
             {
                 foreach (var mesh in obj.Mesh)
@@ -165,9 +166,9 @@ namespace Rasterizer
                         var b = calc(mesh.B);
                         var c = calc(mesh.C);
 
-                        FrameBuffer.WritePixel((int) a.X, (int) a.Y, Color.Black);
-                        FrameBuffer.WritePixel((int) b.X, (int) b.Y, Color.Black);
-                        FrameBuffer.WritePixel((int) c.X, (int) c.Y, Color.Black);
+                        FrameBuffer.Color[(int) a.X, (int) a.Y] = Color.Black;
+                        FrameBuffer.Color[(int) b.X, (int) b.Y] = Color.Black;
+                        FrameBuffer.Color[(int) c.X, (int) c.Y] = Color.Black;
                     }
                     catch
                     {
@@ -175,8 +176,6 @@ namespace Rasterizer
                     }
                 }
             }
-
-            Console.WriteLine("done");
         }
 
         private Vector2 calc(Vertex v)
@@ -212,9 +211,9 @@ namespace Rasterizer
                 var Zmin = _cameraSettings.Zmin;
                 var Zmax = _cameraSettings.Zmax;
                 var ZminTilde = Zmin / Zmax;
-                var d = 1.0;
-                var a = 1.0;
-                var b = 1.0;
+                var d = _cameraSettings.ScreenDistance;
+                var a = _cameraSettings.ScreenWidth;
+                var b = _cameraSettings.ScreenHeight;
                 var p = DenseMatrix.OfArray(new double[,]
                 {
                     {1, 0, 0, 0},
@@ -285,6 +284,51 @@ namespace Rasterizer
             var v = (eu.X * (p.Y - a.Y) - eu.Y * (p.X - a.X)) / (eu.X * ev.Y - ev.X * eu.Y);
 
             return av + u * (bv - av) + v * (cv - av);
+        }
+
+        public void SSAA()
+        {
+            var col = FrameBuffer.Color;
+            var result = new Color[_cameraSettings.ImageWidth / 2, _cameraSettings.ImageWidth / 2];
+
+            for (int x = 0; x < _cameraSettings.ImageWidth / 2; x++)
+            {
+                for (int y = 0; y < _cameraSettings.ImageWidth / 2; y++)
+                {
+                    Color a = col[x * 2, y * 2];
+                    Color b = col[x * 2 + 1, y * 2];
+                    Color c = col[x * 2 + 1, y * 2 + 1];
+                    Color d = col[x * 2, y * 2 + 1];
+
+                    result[x, y] = Color.FromArgb((a.R + b.R + c.R + d.R) / 4, (a.G + b.G + c.G + d.G) / 4,
+                        (a.B + b.B + c.B + d.B) / 4);
+                }
+            }
+
+            FrameBuffer.Color = result;
+            FrameBuffer.X /= 2;
+            FrameBuffer.Y /= 2;
+        }
+        
+        public void SSAAd()
+        {
+            var col = FrameBuffer.Depth;
+            var result = new double[_cameraSettings.ImageWidth / 2, _cameraSettings.ImageWidth / 2];
+
+            for (int x = 0; x < _cameraSettings.ImageWidth / 2; x++)
+            {
+                for (int y = 0; y < _cameraSettings.ImageWidth / 2; y++)
+                {
+                    var a = col[x * 2, y * 2];
+                    var b = col[x * 2 + 1, y * 2];
+                    var c = col[x * 2 + 1, y * 2 + 1];
+                    var d = col[x * 2, y * 2 + 1];
+
+                    result[x, y] = (a + b + c + d) / 4;
+                }
+            }
+
+            FrameBuffer.Depth = result;
         }
     }
 }

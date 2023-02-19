@@ -56,5 +56,10 @@ namespace Rasterizer
 
             return t * r * s;
         }
+
+        public Vector3 GetRotationVector()
+        {
+            return (new Vector3((float)Math.Cos(Rotation.X), (float)Math.Cos(Rotation.Y), (float)Math.Cos(Rotation.Z)));
+        }
     }
 }

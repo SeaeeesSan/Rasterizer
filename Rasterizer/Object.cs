@@ -27,6 +27,8 @@ namespace Rasterizer
         /// </summary>
         public Transform Transform = new Transform();
 
+        public Material Material = new Material();
+
         
         /// <summary>
         /// シーンにオブジェクトを追加

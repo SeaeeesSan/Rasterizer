@@ -1,7 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Numerics;
+using System.Runtime.InteropServices;
+using MathNet.Numerics.Distributions;
 using MathNet.Numerics.LinearAlgebra.Double;
 namespace Rasterizer
 {

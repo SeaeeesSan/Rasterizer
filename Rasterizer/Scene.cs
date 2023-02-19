@@ -11,6 +11,7 @@ namespace Rasterizer
         /// </summary>
         private static List<Object> _objects = new List<Object>(10);
         public static Camera Camera;
+        public static Light Light;
 
         /// <summary>
         /// シーンにオブジェクトを追加
