@@ -1,7 +1,6 @@
-﻿using System.Numerics;
-using MathNet.Numerics.LinearAlgebra.Double;
+﻿using MathNet.Numerics.LinearAlgebra.Double;
 
-namespace Rasterizer
+namespace Rasterizer.Core
 {
     /// <summary>
     /// 三角面
@@ -24,7 +23,7 @@ namespace Rasterizer
         /// 頂点に行列を演算
         /// </summary>
         /// <param name="matrix">行列</param>
-        public void MultiMatrix(DenseMatrix matrix)
+        public void MultiplyMatrix(DenseMatrix matrix)
         {
             A.Position = matrix * A.Position;
             B.Position = matrix * B.Position;

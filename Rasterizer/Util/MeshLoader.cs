@@ -1,24 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.IO;
+﻿using System.Drawing;
 using System.Numerics;
-using System.Runtime.InteropServices;
-using MathNet.Numerics.Distributions;
 using MathNet.Numerics.LinearAlgebra.Double;
-namespace Rasterizer
+using Rasterizer.Core;
+using Rasterizer.Object;
+
+namespace Rasterizer.Util
 {
-    public static class ObjLoader
+    public static class MeshLoader
     {
-        public static Object Load(string name, string objectPath, string texturePath, Transform transform = null)
+        public static Mesh[] LoadMesh(string objectPath)
         {
-            var model = LoadPolygon(objectPath);
-            var texture = new Bitmap(Image.FromFile(texturePath));
-            
-            var obj = new Object(name, model, texture);
-            obj.Transform ??= transform;
-            
-            return obj;
+            var mesh = LoadPolygon(objectPath);
+            return mesh;
         }
         
         private static Mesh[] LoadPolygon(string path)

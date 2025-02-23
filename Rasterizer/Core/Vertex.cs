@@ -1,7 +1,7 @@
 ﻿using System.Numerics;
 using MathNet.Numerics.LinearAlgebra.Double;
 
-namespace Rasterizer
+namespace Rasterizer.Core
 {
     public struct Vertex
     {
