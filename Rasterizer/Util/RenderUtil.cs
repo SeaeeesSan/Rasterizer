@@ -125,4 +125,9 @@ public static class RenderUtil
             graphics.DrawString(text, new Font("Arial", 6), Brushes.Black, new PointF(0, 0));
         }
     }
+    
+    public static Vector3 ToVector3(this DenseMatrix matrix)
+    {
+        return new Vector3((float) matrix[0, 0], (float) matrix[1, 0], (float) matrix[2, 0]);
+    }
 }

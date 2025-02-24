@@ -29,7 +29,7 @@ public class PreviewWindow : System.Windows.Window
             
             _window = new System.Windows.Window
             {
-                Title = "My WPF Window",
+                Title = "My Rasterizer",
                 Width = width,
                 Height = height
             };

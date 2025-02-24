@@ -31,8 +31,7 @@ public class SceneRenderer
     
     public RenderResult Render()
     {
-        var sw = new Stopwatch();
-        sw.Start();
+        var sw = Stopwatch.StartNew();
             
         Projection();
         RenderFrame();
@@ -52,6 +51,12 @@ public class SceneRenderer
     /// </summary>
     public void RenderFrame()
     {
+        var lightDir = _renderSettings.LightDir;
+        var width = _renderSettings.ImageWidth;
+        var height = _renderSettings.ImageHeight;
+        
+        var cameraPos = _scene.GetCamera().MyObject.Transform.Position;
+        
         foreach (var obj in _scene.GetMeshRenderers())
         {
             var material = obj.MyObject.GetMaterial();
@@ -65,6 +70,10 @@ public class SceneRenderer
                 var a = ViewportProjection(triangle.A);
                 var b = ViewportProjection(triangle.B);
                 var c = ViewportProjection(triangle.C);
+                
+                //裏面カリング
+                if (RenderUtil.IsBackFace(a, b, c))
+                    continue;
 
                 //メッシュの最大、最小の座標を取得
                 var xMax = (int)Math.Ceiling(Math.Max(Math.Max(a.X, b.X), c.X));
@@ -73,16 +82,12 @@ public class SceneRenderer
                 var yMin = (int)Math.Floor(Math.Min(Math.Min(a.Y, b.Y), c.Y));
 
                 //描画範囲外
-                if (xMax < 0 || xMin > _renderSettings.ImageWidth ||
-                    yMax < 0 || yMin > _renderSettings.ImageHeight)
+                if (xMax < 0 || xMin > width ||
+                    yMax < 0 || yMin > height)
                 {
                     continue;
                 }
-
-                //裏面カリング
-                if (RenderUtil.IsBackFace(a, b, c))
-                    continue;
-
+                
                 var aw = Math.Max(triangle.A.Position[3, 0], MIN_W);
                 var bw = Math.Max(triangle.B.Position[3, 0], MIN_W);
                 var cw = Math.Max(triangle.C.Position[3, 0], MIN_W);
@@ -92,9 +97,9 @@ public class SceneRenderer
                 var cDepth = (float)(triangle.C.Position[2, 0]);
 
                 var xMinClamped = Math.Max(xMin, 0);
-                var xMaxClamped = Math.Min(xMax, _renderSettings.ImageWidth);
+                var xMaxClamped = Math.Min(xMax, width);
                 var yMinClamped = Math.Max(yMin, 0);
-                var yMaxClamped = Math.Min(yMax, _renderSettings.ImageHeight);
+                var yMaxClamped = Math.Min(yMax, height);
 
 
                 for (int x = xMinClamped; x < xMaxClamped; x++)
@@ -103,6 +108,10 @@ public class SceneRenderer
                     {
                         //画面上の座標
                         var p = new Vector2(x, y);
+                        
+                        //三角形内に点が存在するか
+                        if (!RenderUtil.IsPointInTriangle(p, a, b, c))
+                            continue;
 
                         //深度を算出
                         var depth = RenderUtil.InterpolationDoublePerspectiveCorrected(p, a, b, c,
@@ -111,10 +120,6 @@ public class SceneRenderer
 
                         //ZminとZmaxの間にない場合は描画しない
                         if (depth < _renderSettings.Zmin || depth > _renderSettings.Zmax)
-                            continue;
-
-                        //三角形内に点が存在するか
-                        if (!RenderUtil.IsPointInTriangle(p, a, b, c))
                             continue;
 
                         //深度値の正規化
@@ -239,16 +244,10 @@ public class SceneRenderer
     /// </summary>
     private Vector2 ViewportProjection(Vertex v)
     {
-        double w = v.Position[3, 0];
-        w = Math.Max(w, MIN_W);
-
-        double ndcX = v.Position[0, 0] / w;
-        double ndcY = v.Position[1, 0] / w;
-
-        float screenX = (float)((ndcX + 1.0) * 0.5 * _renderSettings.ImageWidth);
-        float screenY = (float)((1.0 - ndcY) * 0.5 * _renderSettings.ImageHeight);
-
-        return new Vector2(screenX, screenY);
+        var w = Math.Max(v.Position[3, 0], MIN_W);
+        return new Vector2(
+            (float)((v.Position[0, 0] / w + 1.0) * 0.5 * _renderSettings.ImageWidth),
+            (float)((1.0 - v.Position[1, 0] / w) * 0.5 * _renderSettings.ImageHeight));
     }
 
     /// <summary>
