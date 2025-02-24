@@ -5,11 +5,12 @@ namespace Rasterizer.Object.Component;
 
 public class MeshRendererComponent : Core.Component
 {
+    public Mesh[] OriginalMesh;
     public Mesh[] Mesh;
     
     public MeshRendererComponent(Mesh[] mesh)
     {
-        Mesh = mesh;
+        OriginalMesh = mesh;
     }
     
     /// <summary>
@@ -17,6 +18,8 @@ public class MeshRendererComponent : Core.Component
     /// </summary>
     public void UpdateTransform()
     {
+        Mesh = OriginalMesh.Select(x => new Mesh(x.A, x.B, x.C)).ToArray();
+        
         foreach (var triangle in Mesh)
         {
             triangle.MultiplyMatrix(MyObject.Transform.ToMatrix());
@@ -33,5 +36,10 @@ public class MeshRendererComponent : Core.Component
         {
             triangle.MultiplyMatrix(matrix);
         }
+    }
+
+    public void ResetMesh()
+    {
+        Mesh = OriginalMesh.Select(x => new Mesh(x.A, x.B, x.C)).ToArray();
     }
 }

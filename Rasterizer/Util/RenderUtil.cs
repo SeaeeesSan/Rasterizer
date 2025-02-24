@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+﻿using System.Drawing;
+using System.Numerics;
 using MathNet.Numerics.LinearAlgebra.Double;
 
 namespace Rasterizer.Util;
@@ -117,5 +118,11 @@ public static class RenderUtil
         return av + u * (bv - av) + v * (cv - av);
     }
     
-    
+    public static void InsertText(this Bitmap bitmap, string text)
+    {
+        using (var graphics = Graphics.FromImage(bitmap))
+        {
+            graphics.DrawString(text, new Font("Arial", 6), Brushes.Black, new PointF(0, 0));
+        }
+    }
 }

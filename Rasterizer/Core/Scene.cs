@@ -51,11 +51,22 @@ namespace Rasterizer.Core
                 var meshRenderer = obj.GetComponent<MeshRendererComponent>();
                 if (meshRenderer != null)
                 {
-                    count += meshRenderer.Mesh.Length;
+                    count += meshRenderer.OriginalMesh.Length;
                 }
             }
             
             return count;
         }
+        
+        public void Update()
+        {
+            foreach (var obj in _sceneObjects)
+            {
+                foreach (var component in obj.GetComponents())
+                {
+                    component.Update();
+                }
+            }
+        }   
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System.Drawing;
 using System.IO;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Image = System.Windows.Controls.Image;
@@ -15,6 +16,7 @@ public class PreviewWindow : System.Windows.Window
     
     private Thread _thread;
     private Image _image;
+    private TextBlock _textBlock;
 
     public PreviewWindow(int width, int height)
     {
@@ -38,6 +40,17 @@ public class PreviewWindow : System.Windows.Window
                 Height = height
             };
             
+            _textBlock = new TextBlock
+            {
+                Text = "Hello, world!",
+                FontSize = 32,
+                HorizontalAlignment = HorizontalAlignment.Left,
+                VerticalAlignment = VerticalAlignment.Top,
+                //背景透明
+                Background = System.Windows.Media.Brushes.Transparent
+            };
+            
+            _window.Content = _textBlock;
             _window.Content = _image;
             
             app.Run(_window);

@@ -7,6 +7,7 @@ using System.Numerics;
 using Rasterizer.Core;
 using Rasterizer.Object;
 using Rasterizer.Object.Component;
+using Rasterizer.Object.Component.Custom;
 using Rasterizer.Rendering;
 using Rasterizer.Util;
 using Rasterizer.Window;
@@ -32,7 +33,7 @@ namespace Rasterizer
             
             //建物
             var obj1 = new MyObject("building");
-            scene.AddObject(obj1);
+            //scene.AddObject(obj1);
             obj1.AddComponent(new MeshRendererComponent(mesh1));
             obj1.AddComponent(new MaterialComponent(texture1));
             obj1.Transform.Position = new Vector3(0, 0, 0);
@@ -45,8 +46,8 @@ namespace Rasterizer
             var obj2 = new MyObject("ball2");
             obj2.AddComponent(new MeshRendererComponent(mesh2));
             obj2.AddComponent(new MaterialComponent(texture2));
+            obj2.AddComponent(new RotateAnimation(3f));
             obj2.Transform.Position = new Vector3(-5, 11, 42);
-            obj2.Transform.Rotation = new Vector3(0, 120, 30);
             obj2.Transform.Scale = new Vector3(4f, 4f, 4f);
             scene.AddObject(obj2);
             
@@ -56,10 +57,11 @@ namespace Rasterizer
             var obj3 = new MyObject("lpshead");
             obj3.AddComponent(new MeshRendererComponent(mesh3));
             obj3.AddComponent(new MaterialComponent(texture3));
+            obj3.AddComponent(new RotateAnimation(-3f));
             obj3.Transform.Position = new Vector3(3.5f, 6, 42);
             obj3.Transform.Rotation = new Vector3(0, 30, 0);
             obj3.Transform.Scale = new Vector3(0.7f, 0.7f, 0.7f);
-            scene.AddObject(obj3);
+            //scene.AddObject(obj3);
             
             //--------------------------------------------------------------------------------
 
@@ -74,20 +76,24 @@ namespace Rasterizer
 
             //--------------------------------------------------------------------------------
 
-            var scale = 0.5f;
+            var scale = 0.2f;
             var renderSettings = new RenderSettings
             {
                 ImageHeight = (int)(1080 * scale),
                 ImageWidth = (int)(1920 * scale),
+                
+                //PSと同じ画質
+                //ImageHeight = 224,
+                //ImageWidth = 256,
                 Zmin = 1,
                 Zmax = 180,
                 ScreenDistance = 1.5,
                 ScreenWidth = 1.77,
+                //ScreenWidth = 1.1428571429,
                 ScreenHeight = 1.0,
-                BackgroundColor = Color.Black,
+                BackgroundColor = Color.FromArgb(137, 195, 221),
                 LightDir = Vector3.Normalize(new Vector3(-0.1f, 0.5f, 0)),
             };
-
             
             var window = new PreviewWindow(renderSettings.ImageWidth, renderSettings.ImageHeight);
             window.Show();
@@ -97,15 +103,23 @@ namespace Rasterizer
             Console.WriteLine(
                 $" * Object count: {scene.GetAllObjects().Length},  Triangle count: {scene.TriangleCount()}\n");
 
-            
             var sceneRenderer = new SceneRenderer(scene, renderSettings);
-            var result = sceneRenderer.Render();
-            
-            window.UpdateImage(result.FrameBitmap);
-            
-            result.SaveImages(@"F:\output.png", @"F:\output_d.png");
 
-            Console.WriteLine($"Finishd! Elapsed time[ms]: {result.ElapsedTime}");
+            for (var i = 0; i < 200; i++)
+            {
+                sceneRenderer.Clear();
+                var result = sceneRenderer.Render();
+                //result.SaveImages(@"F:\output.png", @"F:\output_d.png");
+                
+                result.FrameBitmap.InsertText($"Frame: {i}, fps: {Math.Round(1000.0 / result.ElapsedTime)}\n" +
+                                              $"Object count: {scene.GetAllObjects().Length},  Triangle count: {scene.TriangleCount()}\n" +
+                                              $"Image size: {renderSettings.ImageWidth} x {renderSettings.ImageHeight}\"");
+                
+                window.UpdateImage(result.FrameBitmap);
+                scene.Update();
+                
+                Console.WriteLine($"Elapsed time[ms]: {result.ElapsedTime} [fps: {1000.0 / result.ElapsedTime}]");
+            }
         }
     }
 }

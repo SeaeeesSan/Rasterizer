@@ -221,6 +221,8 @@ public class SceneRenderer
 
         foreach (var obj in _scene.GetMeshRenderers())
         {
+            obj.ResetMesh();
+            
             // モデリング変換（M）
             obj.UpdateTransform();
 
@@ -274,5 +276,13 @@ public class SceneRenderer
         _frameBuffer.Color = result;
         _frameBuffer.X /= 2;
         _frameBuffer.Y /= 2;
+    }
+    
+    public void Clear()
+    {
+        _frameBuffer = new FrameBuffer(
+            _renderSettings.ImageWidth, 
+            _renderSettings.ImageHeight, 
+            _renderSettings.BackgroundColor);
     }
 }

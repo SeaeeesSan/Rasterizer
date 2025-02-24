@@ -33,4 +33,9 @@ public class MyObject
     {
         return _components.OfType<T>().FirstOrDefault();
     }
+    
+    public Core.Component[] GetComponents()
+    {
+        return _components.ToArray();
+    }
 }
