@@ -1,4 +1,5 @@
 ﻿using System.Drawing;
+using System.IO;
 using System.Numerics;
 using MathNet.Numerics.LinearAlgebra.Double;
 using Rasterizer.Core;

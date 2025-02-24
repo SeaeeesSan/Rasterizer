@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Drawing;
+using System.Windows;
 using System.Drawing.Imaging;
 using System.Numerics;
 using Rasterizer.Core;
@@ -8,11 +9,13 @@ using Rasterizer.Object;
 using Rasterizer.Object.Component;
 using Rasterizer.Rendering;
 using Rasterizer.Util;
+using Rasterizer.Window;
 
 namespace Rasterizer
 {
     internal class Rasterizer
     {
+        [STAThread]
         static void Main(string[] args)
         {
             var scene = new Scene();
@@ -71,7 +74,7 @@ namespace Rasterizer
 
             //--------------------------------------------------------------------------------
 
-            var scale = 1f;
+            var scale = 0.5f;
             var renderSettings = new RenderSettings
             {
                 ImageHeight = (int)(1080 * scale),
@@ -85,13 +88,21 @@ namespace Rasterizer
                 LightDir = Vector3.Normalize(new Vector3(-0.1f, 0.5f, 0)),
             };
 
+            
+            var window = new PreviewWindow(renderSettings.ImageWidth, renderSettings.ImageHeight);
+            window.Show();
+            
             Console.WriteLine("Start rendering...");
             Console.WriteLine($" * Image size: {renderSettings.ImageWidth} x {renderSettings.ImageHeight}");
             Console.WriteLine(
                 $" * Object count: {scene.GetAllObjects().Length},  Triangle count: {scene.TriangleCount()}\n");
 
+            
             var sceneRenderer = new SceneRenderer(scene, renderSettings);
             var result = sceneRenderer.Render();
+            
+            window.UpdateImage(result.FrameBitmap);
+            
             result.SaveImages(@"F:\output.png", @"F:\output_d.png");
 
             Console.WriteLine($"Finishd! Elapsed time[ms]: {result.ElapsedTime}");
